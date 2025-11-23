@@ -125,17 +125,31 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 if st.button("AI Insight"):
     with st.spinner("AI is analyzing this category..."):
 
-        msg = f"""
-        Explain this market category to a beginner seller.
+        mmsg = f"""
+You are an assistant explaining a market category to a beginner e-commerce seller.
 
-        Category: {choice}
+Use the definitions below exactly — do NOT guess or change meanings:
 
-        Demand Index: {demand:.3f}
-        Supply Index: {supply:.3f}
-        Cost Index: {cost:.3f}
-        Attractiveness Score: {score:.3f}
-        Level: {level}
-        """
+DEFINITIONS:
+- Demand Index = consumer demand on Amazon (monthly sales, product rating, and low competition). Higher means customers actively buy.
+- Supply Index = supplier availability and quality on Alibaba (number of suppliers, supplier ratings, entry cost, stability of price ranges). Higher means sourcing is easier and more reliable.
+- Cost Index = how affordable it is for a beginner seller to enter this category (MOQ, unit cost, shipping cost). Higher means lower financial risk.
+- Attractiveness Score = weighted combination of demand (40%), supply (30%), and cost (30%).
+- Attractiveness Level = final recommended classification.
+
+Your job:
+Explain the indicators in simple business language, without changing the definitions.
+
+Now evaluate the category:
+
+Category: {choice}
+
+Demand Index: {demand:.3f}
+Supply Index: {supply:.3f}
+Cost Index: {cost:.3f}
+Attractiveness Score: {score:.3f}
+Attractiveness Level: {level}
+"""
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -146,3 +160,4 @@ if st.button("AI Insight"):
         ai_text = completion.choices[0].message.content
         st.markdown("### AI Explanation")
         st.markdown(ai_text)
+
