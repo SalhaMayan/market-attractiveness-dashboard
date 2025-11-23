@@ -161,12 +161,15 @@ if explain_btn:
         - Keep the explanation simple, practical, and beginner-friendly.
         """
 
-        with st.spinner("AI is analyzing this category..."):
-            completion = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": user_question}],
-                temperature=0.4,
-            )
+  with st.spinner("AI is analyzing this category..."):
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": user_question}],
+        temperature=0.4,
+    )
 
-            ai_text = completion.choices[0].message["content"]
-            st.write(ai_text)
+    # Fix for new OpenAI SDK response format
+    msg_obj = completion.choices[0].message
+    ai_text = msg_obj.content if hasattr(msg_obj, "content") else msg_obj["content"]
+
+    st.write(ai_text)
