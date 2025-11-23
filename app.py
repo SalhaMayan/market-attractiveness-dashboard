@@ -3,167 +3,170 @@ import pandas as pd
 from openai import OpenAI
 import os
 
-# Load data
+# -----------------------------
+# Load Data
+# -----------------------------
 df = pd.read_csv("commerial_dataset_merged_supply demand.csv")
 
+# -----------------------------
+# Page Config
+# -----------------------------
 st.set_page_config(
     page_title="Market Attractiveness Dashboard",
     page_icon="💹",
     layout="centered",
 )
 
-# Title
+# -----------------------------
+# OpenAI Client
+# -----------------------------
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# -----------------------------
+# Page Title
+# -----------------------------
 st.markdown("""
     <h1 style='text-align:center; color:#0B6E4F;'>Market Attractiveness Evaluation</h1>
-    <p style='text-align:left; font-size:17px; color:#444;'>A data-driven evaluation of market category attractiveness based on demand, supply, and cost indicators</p>
+    <p style='text-align:left; font-size:17px; color:#444;'>
+    A data-driven evaluation of market category attractiveness based on demand, supply, and entry cost indicators.
+    </p>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Category Selector With Empty Option
+# Category Selector (with default)
 # -----------------------------
 categories = ["-- Select Category --"] + sorted(df["Category_Main"].unique())
+choice = st.selectbox("Select a Market Category:", categories)
 
-if "selected_category" not in st.session_state:
-    st.session_state.selected_category = "-- Select Category --"
-
-
-choice = st.selectbox(
-    "Select a Market Category:",
-    categories,
-    index=categories.index(st.session_state.selected_category)
-)
-
-# Clear Button
-if st.button("Clear Selection"):
-    st.session_state.selected_category = "-- Select Category --"
-    st.experimental_rerun()
-
-# If user selects a valid category → Show results
-if choice != "-- Select Category --":
-    st.session_state.selected_category = choice
-
+# -----------------------------
+# Base empty values before selection
+# -----------------------------
+if choice == "-- Select Category --":
+    demand = supply = cost = score = None
+    level = "N/A"
+else:
     row = df[df["Category_Main"] == choice].iloc[0]
-
     demand = row["Demand_Index"]
     supply = row["Supply_Index"]
     cost = row["Cost_Index"]
     score = row["Attractiveness"]
     level = row["Category_Level"]
 
-    color_map = {
-        "Highly Attractive": "🟢",
-        "Attractive": "🟡",
-        "Moderate": "🟠",
-        "Not Attractive": "🔴"
-    }
-    symbol = color_map.get(level, "⚪")
+# -----------------------------
+# Color Mapping (Attractiveness Levels)
+# -----------------------------
+color_map = {
+    "Highly Attractive": "🟢",
+    "Attractive": "🟡",
+    "Moderate": "🟠",
+    "Not Attractive": "🔴",
+    "N/A": "⚪"
+}
+symbol = color_map.get(level, "⚪")
 
-    # Display Results
-    st.markdown(f"""
-        <h2 style='color:#0B6E4F;'>Category Results: <b>{choice}</b></h2>
-    """, unsafe_allow_html=True)
+# -----------------------------
+# Display Results Section (Static layout)
+# -----------------------------
+st.markdown(f"""
+    <h2 style='color:#0B6E4F;'>Category Results:</h2>
+""", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
-    with col1:
-        st.metric("Demand Index", f"{demand:.3f}")
-        st.metric("Cost Index", f"{cost:.3f}")
+with col1:
+    st.metric("Demand Index", "---" if demand is None else f"{demand:.3f}")
+    st.metric("Cost Index", "---" if cost is None else f"{cost:.3f}")
 
-    with col2:
-        st.metric("Supply Index", f"{supply:.3f}")
-        st.metric("Attractiveness Score", f"{score:.3f}")
+with col2:
+    st.metric("Supply Index", "---" if supply is None else f"{supply:.3f}")
+    st.metric("Attractiveness Score", "---" if score is None else f"{score:.3f}")
 
-    st.markdown(f"""
-        <h3 style='margin-top:20px;'>Final Classification: {symbol}
-            <span style='color:#333;'>{level}</span>
-        </h3>
-    """, unsafe_allow_html=True)
+st.markdown(f"""
+    <h3 style='margin-top:20px;'>Final Classification: 
+        {symbol} <span style='color:#333;'>{level}</span>
+    </h3>
+""", unsafe_allow_html=True)
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.subheader("Strategic Recommendations")
+# -----------------------------
+# Recommendations
+# -----------------------------
+st.markdown("<hr>", unsafe_allow_html=True)
+st.subheader("Strategic Recommendations")
 
+if choice == "-- Select Category --":
+    st.info("Please select a category to view recommendations.")
+else:
     if level == "Highly Attractive":
         st.markdown("""
         **🟢 Excellent Market Opportunity**
         - High demand  
         - Stable supply chain  
         - Low entry cost  
-        **Very suitable for beginners—especially with high-quality, well-reviewed products.**
+        **A strong category for beginners—especially with high-quality, well-reviewed products.**
         """)
 
     elif level == "Attractive":
         st.markdown("""
         **🟡 Good Market Potential**
-        - Solid demand  
-        - Reasonable entry cost  
-        **Good option for new sellers with careful product selection.**
+        - Demand is solid  
+        - Entry costs are reasonable  
+        **Suitable for entry, but requires careful product selection due to competition.**
         """)
 
     elif level == "Moderate":
         st.markdown("""
-        **🟠 Moderate Potential**
+        **🟠 Moderate Market Potential**
         - Demand is not weak  
         - Supply is moderate  
-        **Better suited for intermediate sellers rather than beginners.**
+        **Better suited to more experienced sellers—not ideal for new beginners.**
         """)
 
     else:
         st.markdown("""
         **🔴 Low Market Potential**
         - Low demand  
-        - Limited suppliers  
+        - Limited number of reliable suppliers  
         - Higher entry cost  
-        **Avoid unless you have a specialized strategy.**
+        **Avoid this category unless a clear, specialized strategy is planned.**
         """)
-else:
-    st.info("Please select a category to view analysis.")
 
-# ============================================================
-# 7)  AI Market Explanation
-# ============================================================
+# -----------------------------
+# GPT Explanation Button
+# -----------------------------
 st.markdown("<hr>", unsafe_allow_html=True)
-st.subheader("Need a deeper explanation?")
+st.subheader("AI Insights")
 
-API_KEY = st.secrets["OPENAI_API_KEY"]
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+explain_btn = st.button("Get AI Market Explanation")
 
-if st.button("AI Insight"):
-    with st.spinner("AI is analyzing this category..."):
+if explain_btn:
+    if choice == "-- Select Category --":
+        st.warning("Please select a category first.")
+    else:
+        user_question = f"""
+        Provide a clear explanation for this e-commerce market category:
 
-        mmsg = f"""
-You are an assistant explaining a market category to a beginner e-commerce seller.
+        Category: {choice}
+        Demand Index: {demand:.3f}
+        Supply Index: {supply:.3f}
+        Cost Index: {cost:.3f}
+        Attractiveness Score: {score:.3f}
+        Level: {level}
 
-Use the definitions below exactly — do NOT guess or change meanings:
+        Explain:
+        - What these indicators mean
+        - Why the category is attractive or not
+        - Expected capital range for a beginner seller
+        - Key risks
+        - Suggested product strategy
+        - Keep the explanation simple, practical, and beginner-friendly.
+        """
 
-DEFINITIONS:
-- Demand Index = consumer demand on Amazon (monthly sales, product rating, and low competition). Higher means customers actively buy.
-- Supply Index = supplier availability and quality on Alibaba (number of suppliers, supplier ratings, entry cost, stability of price ranges). Higher means sourcing is easier and more reliable.
-- Cost Index = how affordable it is for a beginner seller to enter this category (MOQ, unit cost, shipping cost). Higher means lower financial risk.
-- Attractiveness Score = weighted combination of demand (40%), supply (30%), and cost (30%).
-- Attractiveness Level = final recommended classification.
+        with st.spinner("AI is analyzing this category..."):
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": user_question}],
+                temperature=0.4,
+            )
 
-Your job:
-Explain the indicators in simple business language, without changing the definitions.
-
-Now evaluate the category:
-
-Category: {choice}
-
-Demand Index: {demand:.3f}
-Supply Index: {supply:.3f}
-Cost Index: {cost:.3f}
-Attractiveness Score: {score:.3f}
-Attractiveness Level: {level}
-"""
-
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": msg}],
-            temperature=0.3,
-        )
-
-        ai_text = completion.choices[0].message.content
-        st.markdown("### AI Explanation")
-        st.markdown(ai_text)
-
-
+            ai_text = completion.choices[0].message["content"]
+            st.write(ai_text)
