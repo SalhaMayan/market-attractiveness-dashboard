@@ -143,5 +143,6 @@ if st.button("AI Insight"):
             temperature=0.3,
         )
 
-        st.markdown("### AI Explanation:")
-        st.write(completion.choices[0].message["content"])
+        ai_text = completion.choices[0].message.content
+        st.markdown("### AI Explanation")
+        st.markdown(ai_text)
