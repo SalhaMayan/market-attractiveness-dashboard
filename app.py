@@ -33,13 +33,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Category Selector (with default)
+# Category Selector
 # -----------------------------
 categories = ["-- Select Category --"] + sorted(df["Category_Main"].unique())
 choice = st.selectbox("Select a Market Category:", categories)
 
 # -----------------------------
-# Base empty values before selection
+# Initial values (empty before selection)
 # -----------------------------
 if choice == "-- Select Category --":
     demand = supply = cost = score = None
@@ -53,7 +53,7 @@ else:
     level = row["Category_Level"]
 
 # -----------------------------
-# Color Mapping (Attractiveness Levels)
+# Color Mapping
 # -----------------------------
 color_map = {
     "Highly Attractive": "🟢",
@@ -65,11 +65,9 @@ color_map = {
 symbol = color_map.get(level, "⚪")
 
 # -----------------------------
-# Display Results Section (Static layout)
+# Display Results (Static)
 # -----------------------------
-st.markdown(f"""
-    <h2 style='color:#0B6E4F;'>Category Results:</h2>
-""", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:#0B6E4F;'>Category Results:</h2>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -125,13 +123,13 @@ else:
         st.markdown("""
         **🔴 Low Market Potential**
         - Low demand  
-        - Limited number of reliable suppliers  
+        - Limited suppliers  
         - Higher entry cost  
-        **Avoid this category unless a clear, specialized strategy is planned.**
+        **Avoid this category unless a clear specialized strategy is planned.**
         """)
 
 # -----------------------------
-# GPT Explanation Button
+# AI Insights Section
 # -----------------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.subheader("AI Insights")
@@ -161,15 +159,14 @@ if explain_btn:
         - Keep the explanation simple, practical, and beginner-friendly.
         """
 
-  with st.spinner("AI is analyzing this category..."):
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": user_question}],
-        temperature=0.4,
-    )
+        with st.spinner("AI is analyzing this category..."):
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": user_question}],
+                temperature=0.4,
+            )
 
-    # Fix for new OpenAI SDK response format
-    msg_obj = completion.choices[0].message
-    ai_text = msg_obj.content if hasattr(msg_obj, "content") else msg_obj["content"]
+            msg_obj = completion.choices[0].message
+            ai_text = msg_obj.content if hasattr(msg_obj, "content") else msg_obj["content"]
 
-    st.write(ai_text)
+            st.write(ai_text)
