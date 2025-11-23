@@ -113,7 +113,6 @@ else:
     - Limited supplier reliability  
     Not recommended for beginners at this stage.
     """)
-
 # ============================================================
 # 7)  AI Market Explanation
 # ============================================================
@@ -121,26 +120,28 @@ st.markdown("<hr>", unsafe_allow_html=True)
 st.subheader("Need a deeper explanation?")
 
 API_KEY = st.secrets["OPENAI_API_KEY"]
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-if st.button("AI Market Insight"):
-    with st.spinner("Generating AI explanation..."):
-        prompt = f"""
-        Explain the attractiveness level of this market category in clear business language.
+if st.button("AI Insight"):
+    with st.spinner("AI is analyzing this category..."):
+
+        msg = f"""
+        Explain this market category to a beginner seller.
+
         Category: {choice}
-        Demand Index: {demand}
-        Supply Index: {supply}
-        Cost Index: {cost}
-        Final Level: {level}
-        Give a short actionable recommendation for a beginner seller.
+
+        Demand Index: {demand:.3f}
+        Supply Index: {supply:.3f}
+        Cost Index: {cost:.3f}
+        Attractiveness Score: {score:.3f}
+        Level: {level}
         """
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
+            messages=[{"role": "user", "content": msg}],
+            temperature=0.3,
         )
 
-        ai_text = completion.choices[0].message.content
-        st.success("AI Explanation:")
-        st.write(ai_text)
+        st.markdown("### AI Explanation:")
+        st.write(completion.choices[0].message["content"])
