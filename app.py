@@ -1,118 +1,123 @@
 import streamlit as st
 import pandas as pd
-import os
 from openai import OpenAI
+import os
 
-# ============================================================
-# 1) إعدادات الصفحة
-# ============================================================
+# Load data
+df = pd.read_csv("commerial_dataset_merged_supply demand.csv")
+
 st.set_page_config(
     page_title="Market Attractiveness Dashboard",
-    
+    page_icon="💹",
     layout="centered",
 )
 
-# ============================================================
-# 2) تحميل البيانات
-# ============================================================
-df = pd.read_csv("commerial_dataset_merged_supply demand.csv")
-
-# ============================================================
-# 3) واجهة التطبيق
-# ============================================================
+# Title
 st.markdown("""
     <h1 style='text-align:center; color:#0B6E4F;'>Market Attractiveness Evaluation</h1>
-    <p style='text-align:left; font-size:17px; color:#444;'>
-        A data-driven evaluation of market category attractiveness based on demand, supply, and entry cost indicators.
-    </p>
+    <p style='text-align:left; font-size:17px; color:#444;'>A data-driven evaluation of market category attractiveness based on demand, supply, and cost indicators</p>
 """, unsafe_allow_html=True)
 
-# قائمة الفئات
-categories = sorted(df["Category_Main"].unique())
-choice = st.selectbox("Select a Market Category:", categories)
+# -----------------------------
+# Category Selector With Empty Option
+# -----------------------------
+categories = ["-- Select Category --"] + sorted(df["Category_Main"].unique())
 
-# بيانات الفئة
-row = df[df["Category_Main"] == choice].iloc[0]
+if "selected_category" not in st.session_state:
+    st.session_state.selected_category = "-- Select Category --"
 
-demand = row["Demand_Index"]
-supply = row["Supply_Index"]
-cost = row["Cost_Index"]
-score = row["Attractiveness"]
-level = row["Category_Level"]
 
-# ============================================================
-# 4) رموز الجاذبية
-# ============================================================
-color_map = {
-    "Highly Attractive": "🟢",
-    "Attractive": "🟡",
-    "Moderate": "🟠",
-    "Not Attractive": "🔴"
-}
+choice = st.selectbox(
+    "Select a Market Category:",
+    categories,
+    index=categories.index(st.session_state.selected_category)
+)
 
-symbol = color_map.get(level, "⚪")
+# Clear Button
+if st.button("Clear Selection"):
+    st.session_state.selected_category = "-- Select Category --"
+    st.experimental_rerun()
 
-# ============================================================
-# 5) عرض المؤشرات
-# ============================================================
-st.markdown(f"""
-    <h2 style='color:#0B6E4F;'>Category Results: <b>{choice}</b></h2>
-""", unsafe_allow_html=True)
+# If user selects a valid category → Show results
+if choice != "-- Select Category --":
+    st.session_state.selected_category = choice
 
-col1, col2 = st.columns(2)
+    row = df[df["Category_Main"] == choice].iloc[0]
 
-with col1:
-    st.metric("Demand Index", f"{demand:.3f}", help="Measures how strong consumer demand is in this market category.")
-    st.metric("Cost Index", f"{cost:.3f}", help="Indicates how easy it is to enter financially (higher = cheaper entry).")
+    demand = row["Demand_Index"]
+    supply = row["Supply_Index"]
+    cost = row["Cost_Index"]
+    score = row["Attractiveness"]
+    level = row["Category_Level"]
 
-with col2:
-    st.metric("Supply Index", f"{supply:.3f}", help="Shows supplier availability, reliability, and price stability.")
-    st.metric("Attractiveness Score", f"{score:.3f}", help="Weighted combination of demand, supply, and cost.")
+    color_map = {
+        "Highly Attractive": "🟢",
+        "Attractive": "🟡",
+        "Moderate": "🟠",
+        "Not Attractive": "🔴"
+    }
+    symbol = color_map.get(level, "⚪")
 
-st.markdown(f"""
-    <h3 style='margin-top:20px;'>Final Classification: {symbol}
-    <span style='color:#333;'>{level}</span></h3>
-""", unsafe_allow_html=True)
+    # Display Results
+    st.markdown(f"""
+        <h2 style='color:#0B6E4F;'>Category Results: <b>{choice}</b></h2>
+    """, unsafe_allow_html=True)
 
-# ============================================================
-# 6) توصيات مدمجة
-# ============================================================
-st.markdown("<hr>", unsafe_allow_html=True)
-st.subheader("Strategic Recommendations")
+    col1, col2 = st.columns(2)
 
-if level == "Highly Attractive":
-    st.markdown("""
-    **🟢 Excellent Market Opportunity**
-    - High demand  
-    - Strong supplier ecosystem  
-    - Low entry cost  
-    Ideal for beginners with minimal risk.
-    """)
+    with col1:
+        st.metric("Demand Index", f"{demand:.3f}")
+        st.metric("Cost Index", f"{cost:.3f}")
 
-elif level == "Attractive":
-    st.markdown("""
-    **🟡 Good Market Potential**
-    - Stable demand  
-    - Reasonable entry cost  
-    Suitable for beginners but requires careful product differentiation.
-    """)
+    with col2:
+        st.metric("Supply Index", f"{supply:.3f}")
+        st.metric("Attractiveness Score", f"{score:.3f}")
 
-elif level == "Moderate":
-    st.markdown("""
-    **🟠 Moderate Opportunity**
-    - Mixed demand  
-    - Moderate supplier depth  
-    Better suited for sellers with some experience and capital.
-    """)
+    st.markdown(f"""
+        <h3 style='margin-top:20px;'>Final Classification: {symbol}
+            <span style='color:#333;'>{level}</span>
+        </h3>
+    """, unsafe_allow_html=True)
 
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.subheader("Strategic Recommendations")
+
+    if level == "Highly Attractive":
+        st.markdown("""
+        **🟢 Excellent Market Opportunity**
+        - High demand  
+        - Stable supply chain  
+        - Low entry cost  
+        **Very suitable for beginners—especially with high-quality, well-reviewed products.**
+        """)
+
+    elif level == "Attractive":
+        st.markdown("""
+        **🟡 Good Market Potential**
+        - Solid demand  
+        - Reasonable entry cost  
+        **Good option for new sellers with careful product selection.**
+        """)
+
+    elif level == "Moderate":
+        st.markdown("""
+        **🟠 Moderate Potential**
+        - Demand is not weak  
+        - Supply is moderate  
+        **Better suited for intermediate sellers rather than beginners.**
+        """)
+
+    else:
+        st.markdown("""
+        **🔴 Low Market Potential**
+        - Low demand  
+        - Limited suppliers  
+        - Higher entry cost  
+        **Avoid unless you have a specialized strategy.**
+        """)
 else:
-    st.markdown("""
-    **🔴 Low Potential**
-    - Weak demand  
-    - High entry costs  
-    - Limited supplier reliability  
-    Not recommended for beginners at this stage.
-    """)
+    st.info("Please select a category to view analysis.")
+
 # ============================================================
 # 7)  AI Market Explanation
 # ============================================================
@@ -160,4 +165,5 @@ Attractiveness Level: {level}
         ai_text = completion.choices[0].message.content
         st.markdown("### AI Explanation")
         st.markdown(ai_text)
+
 
